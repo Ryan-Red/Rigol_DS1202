@@ -16,8 +16,10 @@ print(myScope.ask("*IDN?"))
 test = myScope
 
 test.write(":RUN")
-#test.write(":STOP")
+#
 time.sleep(1)
+
+test.write(":STOP")
  
 # Grab the data from channel 1
 test.write(":WAV:POIN:MODE RAW")
@@ -50,7 +52,7 @@ data2 = np.array(myScope.query_binary_values(":WAV:DATA? CHAN2",datatype='B')[10
 
 #Need to do some bitflips and  some weird scaling, http://www.righto.com/2013/07/rigol-oscilloscope-hacks-with-python.html did it first
 data1 = np.add(np.multiply(data1,-1), 255)
-data1 = np.add(np.multiply(data2,-1), 255)
+data2 = np.add(np.multiply(data2,-1), 255)
 
 finalData1 = np.multiply(np.divide(np.add(data1,-130 - voltoffset1/voltscale1*25), 25),voltscale1)
 finalData2 = np.multiply(np.divide(np.add(data2,-130 - voltoffset2/voltscale2*25), 25),voltscale2)
