@@ -16,77 +16,63 @@ print(myScope.ask("*IDN?"))
 test = myScope
 
 test.write(":RUN")
-
+#test.write(":STOP")
 time.sleep(1)
-
-
- 
- 
-# Stop data acquisition
-
  
 # Grab the data from channel 1
 test.write(":WAV:POIN:MODE RAW")
 
-finalData = []
 
-test.write(":WAV:DATA? CHAN1")
-rawdata = test.read().split(',')
-
-
-rawdata[0] = rawdata[0][11:]
-
-
-realdata = rawdata
-
-
-finalData = finalData + [float(val) for val in realdata]
-
-
-
-
-
- 
 # Get the voltage scale
-voltscale = float(test.ask(":CHAN1:SCAL?"))
-
+voltscale1 = float(test.ask(":CHAN1:SCAL?"))
+voltscale2 = float(test.ask(":CHAN2:SCAL?"))
  
 # And the voltage offset
-voltoffset = float(test.ask(":CHAN1:OFFS?"))
-
+voltoffset1 = float(test.ask(":CHAN1:OFFS?"))
+voltoffset2 = float(test.ask(":CHAN2:OFFS?"))
  
  
 # Get the timescale
-timescale = float(test.ask(":TIM:SCAL?"))
-print(timescale)
+timescale1 = float(test.ask(":TIM:SCAL?"))
+timescale2 = float(test.ask(":TIM:SCAL?"))
 
  
 # Get the timescale offset
-timeoffset = float(test.ask(":TIM:OFFS?"))
+timeoffset1 = float(test.ask(":TIM:OFFS?"))
+timeoffset2 = float(test.ask(":TIM:OFFS?"))
 
 
 
+finalDataChan1 = []
+
+data1 = np.array(myScope.query_binary_values(":WAV:DATA? CHAN1",datatype='B')[10:])
+data2 = np.array(myScope.query_binary_values(":WAV:DATA? CHAN2",datatype='B')[10:])
+
+#Need to do some bitflips and  some weird scaling, http://www.righto.com/2013/07/rigol-oscilloscope-hacks-with-python.html did it first
+data1 = np.add(np.multiply(data1,-1), 255)
+data1 = np.add(np.multiply(data2,-1), 255)
+
+finalData1 = np.multiply(np.divide(np.add(data1,-130 - voltoffset1/voltscale1*25), 25),voltscale1)
+finalData2 = np.multiply(np.divide(np.add(data2,-130 - voltoffset2/voltscale2*25), 25),voltscale2)
 
 
-# Now, generate a time axis.  The scope display range is 0-600, with 300 being
-# time zero.
-time = np.linspace(0, timescale*len(finalData),len(finalData))/10**(-6)
 
- 
-# Start data acquisition again, and put the scope back in local mode
+time1 = np.linspace(timeoffset1, timescale1*len(finalData1)-timeoffset1,len(finalData1))/10**(-6)
+time2 = np.linspace(timeoffset2, timescale2*len(finalData2)-timeoffset2,len(finalData2))/10**(-6)
+
 test.write(":RUN")
 test.write(":KEY:FORC")
 
 
 
-# Plot the data
-x = len(finalData)
-print(x)
-print("\n\n")
-print(time.size)
-
-plot.plot(time,finalData)
+plot.plot(time1,finalData1)
 plot.title("Oscilloscope Channel 1")
+plot.ylabel("Voltage (V)")
+plot.xlabel("Time (uS)")
+plot.show()
+
+plot.plot(time2,finalData2)
+plot.title("Oscilloscope Channel 2")
 plot.ylabel("Voltage (V)")
 plot.xlabel("Time (uS)")
 plot.show()
