@@ -1,8 +1,16 @@
 import os
 import pyvisa as visa
 import numpy as np
-import matplotlib.pyplot as plot
+
 import time
+
+from tftb.generators import fmlin, sigmerge, noisecg
+from tftb.processing.cohen import WignerVilleDistribution
+
+from mpl_toolkits.mplot3d import axes3d, Axes3D
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from matplotlib import cm
+import matplotlib.pyplot as plt
  
 rm = visa.ResourceManager()
 print(rm.list_resources())
@@ -67,14 +75,85 @@ test.write(":KEY:FORC")
 
 
 
-plot.plot(time1,finalData1)
-plot.title("Oscilloscope Channel 1")
-plot.ylabel("Voltage (V)")
-plot.xlabel("Time (uS)")
-plot.show()
+plt.plot(time1,finalData1)
+plt.title("Oscilloscope Channel 1")
+plt.ylabel("Voltage (V)")
+plt.xlabel("Time (uS)")
+plt.show()
 
-plot.plot(time2,finalData2)
-plot.title("Oscilloscope Channel 2")
-plot.ylabel("Voltage (V)")
-plot.xlabel("Time (uS)")
-plot.show()
+plt.plot(time2,finalData2)
+plt.title("Oscilloscope Channel 2")
+plt.ylabel("Voltage (V)")
+plt.xlabel("Time (uS)")
+plt.show()
+
+
+#wvd = WignerVilleDistribution(finalData1)
+#k = wvd.run()
+#print(k)
+
+
+n_fbins = 1190
+signal = finalData1
+
+
+y = np.linspace(10, 100, finalData1.shape[0])
+X, Y = np.meshgrid(time1, y)
+
+
+tausec = round(n_fbins / 2.0)
+winlength = tausec - 1
+
+ts = time1
+
+
+tfr = np.zeros((n_fbins, ts.shape[0]), dtype=complex)
+
+
+
+taulens = np.min(np.c_[np.arange(signal.shape[0]),
+                        signal.shape[0] - np.arange(signal.shape[0]) - 1,
+                        winlength * np.ones(ts.shape)], axis=1)
+
+
+conj_signal = np.conj(signal)
+for icol in range(0, len(time1)):
+    taumax = taulens[icol]
+    tau = np.arange(-taumax, taumax + 1).astype(int)
+    indices = np.remainder(n_fbins + tau, n_fbins).astype(int)
+
+    tfr[indices, icol] = signal[icol + tau] * conj_signal[icol - tau]
+
+
+    if (icol <= signal.shape[0] - tausec) and (icol >= tausec + 1):
+
+        tfr[tausec, icol] = signal[icol + tausec-1] * np.conj(signal[icol - tausec-1]) #+ signal[icol - tausec-1] * conj_signal[icol + tausec-1]
+
+
+tfr = np.fft.fft(tfr, axis=0)
+tfr = np.real(tfr)
+print(tfr.shape)
+print(Y.shape)
+print(X.shape)
+
+fig = plt.figure()
+ax = Axes3D(fig) #fig.gca(projection="3d")#Axes3D(fig)
+
+
+maxi = np.amax(tfr-10)
+mini = np.amin(tfr)
+levels = np.linspace(mini, maxi, 65)
+ax.contour(X, Y, tfr, levels=levels)
+
+ax.set_zlabel("Amplitude")
+ax.set_xlabel("Time")
+ax.set_ylabel("Frequency")
+
+
+
+
+ax.set_title('Surface plot')
+
+plt.show()
+
+#wvd.plot(kind='surf')
