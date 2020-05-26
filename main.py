@@ -88,8 +88,9 @@ plt.xlabel("Time (uS)")
 plt.show()
 
 
-#wvd = WignerVilleDistribution(finalData1)
-#k = wvd.run()
+wvd = WignerVilleDistribution(finalData1)
+wvd.run()
+wvd.plot(kind='cont')
 #print(k)
 
 
@@ -97,11 +98,11 @@ n_fbins = 1190
 signal = finalData1
 
 
-y = np.linspace(10, 100, finalData1.shape[0])
+y = np.linspace(0, 1000, finalData1.shape[0])
 X, Y = np.meshgrid(time1, y)
 
 
-tausec = round(n_fbins / 2.0)
+tausec = round(n_fbins)
 winlength = tausec - 1
 
 ts = time1
@@ -136,20 +137,23 @@ print(tfr.shape)
 print(Y.shape)
 print(X.shape)
 
-fig = plt.figure()
-ax = Axes3D(fig) #fig.gca(projection="3d")#Axes3D(fig)
+fig, ax = plt.subplots()
 
 
 maxi = np.amax(tfr-10)
 mini = np.amin(tfr)
-levels = np.linspace(mini, maxi, 65)
+levels = np.linspace(mini, maxi, 10)
+
+tfrFinal = []
+spare = []
+# for i in range(0,len(tfr)):
+#     for j in range(0,(int)(len(Y)/2)):
+#         spare = spare + [tfr[i][j]]
+#     tfrFinal = tfrFinal + [spare]
+
+#tfrFinal = [tfr[i][j] for i in range(0,len(tfr)) for j in range(0,len(tfr[int(Y/2)])) ]
+
 ax.contour(X, Y, tfr, levels=levels)
-
-ax.set_zlabel("Amplitude")
-ax.set_xlabel("Time")
-ax.set_ylabel("Frequency")
-
-
 
 
 ax.set_title('Surface plot')
